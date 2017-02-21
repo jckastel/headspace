@@ -17,7 +17,7 @@ root = logging.getLogger()
 root.setLevel(logging.DEBUG)
 ch = logging.StreamHandler(sys.stdout)
 ch.setLevel(logging.DEBUG)
-ch.setFormatter(logging.Formatter('%(asctime)s:%(name)s:%(levelname)s: %(message)s'))
+ch.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(processName)s:%(process)d:%(threadName)s:%(thread)d:%(filename)s:%(lineno)s:%(funcName)s: %(message)s'))
 root.addHandler(ch)
 
 log = logging.getLogger(__name__)
@@ -90,10 +90,10 @@ def make_benchmark_job(job_name, workers, device_name, size, data_type):
         dot_operation = tensorflow.matmul(r2, r1)
     return dot_operation
 
-def benchmark(max_time=10,
+def benchmark(max_time=5,
               workers=1,
               data_types=(
-                  #tensorflow.float16, # Float16 is very slow on the CPU.
+                  tensorflow.float16, # Float16 is very slow on the CPU.
                   tensorflow.float32,
                   tensorflow.float64),
               devices=("gpu:0",
@@ -123,7 +123,7 @@ def benchmark(max_time=10,
     max_device_time = 0
     # Run the benchmark test.
     for size in matrix_sizes:
-        used_matrix_sizes.append(size)
+        used_matrix_sizes.append(size ** 2)
 
         for data_type in device_times:
             for device_name in device_times[data_type]:
@@ -156,13 +156,13 @@ def benchmark(max_time=10,
     for i, data_type in enumerate(device_times):
         for j, device in enumerate(device_times[data_type]):
             times = device_times[data_type][device]
-            plt.plot(matrix_sizes[:len(times)],
+            plt.plot(used_matrix_sizes[:len(times)],
                      times,
                      line_styles[i % len(line_styles)],
                      color=colors[j % len(colors)],
                      label="{}/{}".format(device, data_type.name))
-    plt.ylabel('Time')
-    plt.xlabel('Matrix size')
+    plt.ylabel('Time (seconds)')
+    plt.xlabel('Matrix size (elements)')
     plt.legend()
     plt.xlim([min(used_matrix_sizes), max(used_matrix_sizes)])
     plt.ylim([0, max_device_time])
